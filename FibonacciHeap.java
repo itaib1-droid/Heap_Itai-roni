@@ -13,11 +13,14 @@ public class FibonacciHeap
 	private int linksCnt;
 	private int cutCnt;
 
+	/* #################################################################################
+	//                               main methods 
+	#####################################################################################*/
+
 	/**
 	 * empty constructor
 	 */
-	public FibonacciHeap()
-	{
+	public FibonacciHeap(){
 		min = null;
 		first = null;
 		heapSize = 0;
@@ -32,8 +35,7 @@ public class FibonacciHeap
 	 * Insert (key,info) into the heap and return the newly generated HeapNode.
 	 *
 	 */
-	public HeapNode insert(int key, String info) 
-	{    
+	public HeapNode insert(int key, String info) {    
 		HeapNode newNode = new HeapNode(key, info);
 		// if the heap was empty
 		if (heapSize == 0) {
@@ -49,11 +51,134 @@ public class FibonacciHeap
 		numTrees++;
 		return newNode; 
 	}
+
+	/**
+	 * 
+	 * Return the minimal HeapNode, null if empty.
+	 *
+	 */
+	public HeapNode findMin(){
+		return min;		
+	}
+	
+	/**
+	 * 
+	 * Delete the minimal item
+	 *
+	 */
+	public void deleteMin(){
+		this.genericDelete(min, true);
+	}
+	
+	/**
+	 * 
+	 * pre: 0<diff<x.key
+	 * 
+	 * Decrease the key of x by diff and fix the heap. 
+	 * 
+	 */
+	public void decreaseKey(HeapNode x, int diff) 
+	{    
+		this.decreaseKeyWithoutMinUpdate(x,  diff); // decrease x's key and initiate cuts accordingly
+		this.updateMin(x); // update the min node
+	}
+
+	/**
+	 * 
+	 * Delete x from the heap
+	 *
+	 */
+	public void delete(HeapNode x) 
+	{    		
+		// if it's not the min, decrease its key to be the smallest without updating the min
+		if (x != min) {
+			int diff = (x.key - min.key) + 1;
+			this.decreaseKeyWithoutMinUpdate(x, diff);
+		}
+		// activate the deletion
+		this.genericDelete(x, x == min);
+	}
+	
+	/**
+	 * 
+	 * Meld the heap with heap2
+	 *
+	 */
+	public void meld(FibonacciHeap heap2)
+	{
+		// the other heap is empty so no changes required
+		if (heap2 == null || heap2.size() == 0)
+			return;
+		// this heap is empty
+		if (this.size() == 0) {
+			this.duplicateOf(heap2);
+			return;
+		}
+		
+		// update the min field if needed
+		this.updateMin(heap2.min); 
+
+		// update attributes 
+		heapSize += heap2.heapSize;
+		numTrees += heap2.numTrees;
+		linksCnt += heap2.linksCnt;
+		cutCnt += heap2.cutCnt;
+		
+		//connecting 'edges'
+		HeapNode lastNodeHeap2 = heap2.first.prev;
+		this.first.prev.connectNext(heap2.first); 
+		lastNodeHeap2.connectNext(this.first);	
+	}
+
+	/**
+	 * 
+	 * Return the number of elements in the heap
+	 *   
+	 */
+	public int size()
+	{
+		return heapSize; 
+	}
+	
+	/**
+	 * 
+	 * Return the number of trees in the heap.
+	 * 
+	 */
+	public int numTrees()
+	{
+		return numTrees;
+	}
+	
+	/**
+	 * 
+	 * Return the total number of links.
+	 * 
+	 */
+	public int totalLinks()
+	{
+		return linksCnt;
+	}
+
+	/**
+	 * 
+	 * Return the total number of cuts.
+	 * 
+	 */
+	public int totalCuts()
+	{
+		return cutCnt;
+	}
+	
+
+	/* #################################################################################
+	//                               help methods 
+	#####################################################################################*/
+
 	/**
 	 * relocate the input node to the heap's roots
 	 */
-	public void insertNodeToRoots(HeapNode node)
-	{
+	public void insertNodeToRoots(HeapNode node){
 		// insert node before first with the appropriate pointers attached
 		node.insertBefore(first);
 		node.parent = null;
@@ -64,21 +189,10 @@ public class FibonacciHeap
 
 	/**
 	 * 
-	 * Return the minimal HeapNode, null if empty.
-	 *
-	 */
-	public HeapNode findMin()
-	{
-		return min;		
-	}
-	
-	/**
-	 * 
 	 * For each node in the chain of the input node, remove its parent
 	 *
 	 */
-	private void removeParents(HeapNode node)
-	{
+	private void removeParents(HeapNode node){
 		HeapNode curr = node;
 		do {
 			curr.parent = null;
@@ -88,20 +202,9 @@ public class FibonacciHeap
 	}
 	
 	/**
-	 * 
-	 * Delete the minimal item
-	 *
-	 */
-	public void deleteMin()
-	{
-		this.genericDelete(min, true);
-	}
-	
-	/**
 	 * Deletes the input node considering the need for consolidating according to isMin parameter
 	 */
-	private void genericDelete(HeapNode x, boolean isMin) 
-	{    
+	private void genericDelete(HeapNode x, boolean isMin) {    
 		// edge case of a single-node-heap
 		if (heapSize == 1)
 		{
@@ -236,20 +339,6 @@ public class FibonacciHeap
 		}
 	}
 	
-
-	/**
-	 * 
-	 * pre: 0<diff<x.key
-	 * 
-	 * Decrease the key of x by diff and fix the heap. 
-	 * 
-	 */
-	public void decreaseKey(HeapNode x, int diff) 
-	{    
-		this.decreaseKeyWithoutMinUpdate(x,  diff); // decrease x's key and initiate cuts accordingly
-		this.updateMin(x); // update the min node
-	}
-
 	/**
 	 * pre: 0<diff<x.key
 	 * Decrease the key of x by diff and fix the heap without updating the min node 
@@ -261,7 +350,6 @@ public class FibonacciHeap
 			this.cascadingCut(x); // initiate the cascading cut process
 	}
 	
-
 	/**
 	 * pre: node is in heap
 	 * cut node from its parent, add it to the heap's roots
@@ -301,84 +389,6 @@ public class FibonacciHeap
 		}
 	}
 
-	/**
-	 * 
-	 * Delete x from the heap
-	 *
-	 */
-	public void delete(HeapNode x) 
-	{    		
-		// if it's not the min, decrease its key to be the smallest without updating the min
-		if (x != min) {
-			int diff = (x.key - min.key) + 1;
-			this.decreaseKeyWithoutMinUpdate(x, diff);
-		}
-		// activate the deletion
-		this.genericDelete(x, x == min);
-	}
-	
-
-	/**
-	 * 
-	 * Return the total number of links.
-	 * 
-	 */
-	public int totalLinks()
-	{
-		return linksCnt;
-	}
-
-	/**
-	 * 
-	 * Return the total number of cuts.
-	 * 
-	 */
-	public int totalCuts()
-	{
-		return cutCnt;
-	}
-	
-	/**
-	 * 
-	 * Meld the heap with heap2
-	 *
-	 */
-	public void meld(FibonacciHeap heap2)
-	{
-		// the other heap is empty so no changes required
-		if (heap2 == null || heap2.size() == 0)
-			return;
-		// this heap is empty
-		if (this.size() == 0) {
-			this.duplicateOf(heap2);
-			return;
-		}
-		
-		// update the min field if needed
-		this.updateMin(heap2.min); 
-
-		// update attributes 
-		heapSize += heap2.heapSize;
-		numTrees += heap2.numTrees;
-		linksCnt += heap2.linksCnt;
-		cutCnt += heap2.cutCnt;
-		
-		//connecting 'edges'
-		HeapNode lastNodeHeap2 = heap2.first.prev;
-		this.first.prev.connectNext(heap2.first); 
-		lastNodeHeap2.connectNext(this.first);	
-	}
-
-	/**
-	 * 
-	 * Return the number of elements in the heap
-	 *   
-	 */
-	public int size()
-	{
-		return heapSize; 
-	}
-	
 	/** 
 	 * updates the min field of self to point to  the smaller node 
 	 */
@@ -399,17 +409,6 @@ public class FibonacciHeap
 	    } while (currNode != first);
 	}
 
-
-	/**
-	 * 
-	 * Return the number of trees in the heap.
-	 * 
-	 */
-	public int numTrees()
-	{
-		return numTrees;
-	}
-	
 	/**
 	 * make this heap a duplicate of "other" heap
 	 */
@@ -423,6 +422,10 @@ public class FibonacciHeap
 		cutCnt = other.cutCnt;
 	}
 
+
+	/* #################################################################################
+	//                               HeapNode class
+	#####################################################################################*/
 	/**
 	 * Class implementing a node in a Fibonacci Heap.
 	 *  
