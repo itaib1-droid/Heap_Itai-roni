@@ -335,8 +335,8 @@ public class Heap
 			this.meld(newHeap);
 		}
 		else {
-			first = newNode;
             this.meld(newHeap);
+			first = newNode;
 			updateMin(); 	
            
 		}
@@ -507,7 +507,7 @@ public class Heap
      */
     public int totalCuts()
     {
-        return 46; // should be replaced by student code
+        return cutCnt;
     }
     
 
