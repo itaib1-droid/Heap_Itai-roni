@@ -28,19 +28,30 @@ public class Heap
 	 * updates the min field out of all roots 
 	 */
 	public void updateMin() {
-	    HeapNode currNode = first;
-	    do {
-	        updateMin(currNode);
+		// Handle edge cases
+		if (heapSize == 0 || first == null) {
+			min = null;
+			return;
+		}
+		
+		// Reset min and find minimum among all roots
+		min = first;
+	    HeapNode currNode = first.next;
+	    while (currNode != first) {
+	        if (currNode.key < min.key) {
+	            min = currNode;
+	        }
 	        currNode = currNode.next;
-	    } while (currNode != first);
+	    }
 	}
 
     public void updateMin(HeapNode node)
 	{
-		if (node.key < this.min.key)
+		if (node == null) return;
+		if (min == null || node.key < min.key) {
 			min = node;
+		}
 	}
-
     /**
 	 * pre: 0<diff<x.key
 	 * Decrease the key of x by diff and fix the heap without updating the min node 
@@ -56,11 +67,8 @@ public class Heap
 	 * Decrease the key of x by diff and heapfyUp node without updating the min node 
 	 */
     public void decreaseNotLazy(HeapNode x) {
-        if (x.parent != null && x.key >= x.parent.key) // the rule of heap is not violated
-            return;
-        else {
-           this.HeapifyUp(x);
-        }
+        if (x.parent != null && x.key < x.parent.key) // the rule of heap is violated
+            this.HeapifyUp(x);
     }
 
     /**
@@ -127,10 +135,17 @@ public class Heap
 	 * relocate the input node to the heap's roots
 	 */
 	public void insertNodeToRoots(HeapNode node){
-		// insert node before first with the appropriate pointers attached
-		node.insertBefore(first);
+		if (first == null) {
+			// First node in the heap
+			first = node;
+			node.next = node;
+			node.prev = node;
+		} else {
+			// insert node before first with the appropriate pointers attached
+			node.insertBefore(first);
+			first = node;
+		}
 		node.parent = null;
-		first = node;
 		numTrees++; // update counter
 		node.mark = false;	
 	}
@@ -165,7 +180,9 @@ public class Heap
         totalHeapifyCosts += heap2.totalHeapifyCosts;
 		
         // update the min field if needed
-		this.updateMin(); 
+		if (heap2.min != null && (this.min == null || heap2.min.key < this.min.key)) {
+			this.min = heap2.min;
+		}
     }
 
     public void notLazyMeld(Heap heap2)
@@ -178,8 +195,14 @@ public class Heap
 	 */
 	public void consolidate()
 	{
+		// handle empty or single tree heaps
+		if (heapSize == 0 || numTrees == 0 || first == null) {
+			return;
+		}
+		
 		// initial the "buckets" in which we keep the trees of same ranks
-		int bound = 2*((int) Math.floor(Math.log(heapSize) / Math.log(2)) + 2);
+		// Since we recalculate ranks below, the maximum rank will be at most log2(heapSize)
+		int bound = 2*((int)Math.ceil(Math.log(Math.max(heapSize, 2)) / Math.log(2)) + 5);
 		HeapNode[] buckets = new HeapNode[bound];
 		
 		// iterate through the heap
@@ -190,6 +213,23 @@ public class Heap
 			HeapNode nxt = curr.next;
 			curr.next = curr;
 			curr.prev = curr;
+			
+			// Verify rank is correct (should equal number of children)
+			int actualRank = 0;
+			if (curr.child != null) {
+				HeapNode child = curr.child;
+				int maxIter = heapSize + 10; // safety limit
+				do {
+					actualRank++;
+					child = child.next;
+					if (actualRank > maxIter) {
+						// Cycle detected - reset to safe value
+						actualRank = 0;
+						break;
+					}
+				} while (child != curr.child);
+			}
+			curr.rank = actualRank;
 			
 			HeapNode subTree = buckets[curr.rank];
 			while(subTree != null)
@@ -241,6 +281,7 @@ public class Heap
 	public void fromBucketsToHeap(HeapNode[] buckets)
 	{
 		min = null;
+		first = null;
 		numTrees = 0;
 		// go over the nodes in buckets from the biggest to smallest 
 		for (int i = buckets.length - 1; i >= 0; i--) {
@@ -248,14 +289,20 @@ public class Heap
 			if (node != null)
 			{
 				// checks if we didn't encounter real nodes yet
-				if (min == null) {			
+				if (first == null) {			
 					first = node;
 					min = node;
+					// Ensure this node is a single root
+					node.next = node;
+					node.prev = node;
 				}
 				else {
 					node.insertBefore(first);
 					first = node;
-					this.updateMin(node);
+					// Compare with current min
+					if (node.key < min.key) {
+						min = node;
+					}
 				}
 				// increase the trees counter by one for each inserted tree
 				numTrees += 1;				
@@ -269,11 +316,11 @@ public class Heap
 	 *
 	 */
 	private void removeParents(HeapNode node){
+		if (node == null) return;
 		HeapNode curr = node;
 		do {
 			curr.parent = null;
 			curr = curr.next;
-			cutCnt ++;
 		} while (curr != node);
 	}
 
@@ -332,18 +379,14 @@ public class Heap
         newHeap.heapSize = 1;
         newHeap.numTrees = 1;
         
-		// if the heap was empty
-		if (heapSize == 0) {
-			this.meld(newHeap);
+		// Meld with new heap
+		this.meld(newHeap);
+		
+		// Ensure min is correctly updated
+		if (this.min == null || newNode.key < this.min.key) {
+			this.min = newNode;
 		}
-		else {
-            this.meld(newHeap);
-			first = newNode;
-			updateMin(); 	
-           
-		}
-		// heapSize++;
-		// numTrees++;
+		
 		return newNode; 
     }
 
@@ -363,6 +406,11 @@ public class Heap
      */
     public void deleteMin()
     {
+        // Handle empty heap
+        if (heapSize == 0 || min == null) {
+            return;
+        }
+        
         HeapNode min_node = min;
         // edge case of a single-node-heap
 		if (heapSize == 1)
@@ -382,22 +430,39 @@ public class Heap
 			this.removeParents(first); 
 		}
 		else {
+			// Remove min from the root list
+			if (min_node == first) {
+				// If min is first, update first pointer
+				if (first.next != first) {
+					// There are other roots
+					first = first.next;
+				} else {
+					// min was the only root, should not happen if numTrees > 1
+					first = null;
+				}
+			} else {
+				// min is not first, remove it from the circular list
+				min_node.prev.connectNext(min_node.next);
+			}
 			
 			// add the deleted node's children as trees to the heap
 			if (min_node.child != null) {
-				HeapNode second = first.next;
-				HeapNode currChild = min_node.child;	
-				HeapNode lastChild = currChild.prev;
-				// for each child, remove the parent
-				this.removeParents(currChild);
-				// connect the children to the heap's roots						
-				first.connectNext(currChild);
-				lastChild.connectNext(second);		
+				if (first != null) {
+					// Connect children to existing roots
+					HeapNode second = first.next;
+					HeapNode currChild = min_node.child;	
+					HeapNode lastChild = currChild.prev;
+					// for each child, remove the parent
+					this.removeParents(currChild);
+					// connect the children to the heap's roots						
+					first.connectNext(currChild);
+					lastChild.connectNext(second);
+				} else {
+					// No other roots, children become the new roots
+					first = min_node.child;
+					this.removeParents(first);
+				}
 			}
-            else {
-                // no children - nothing to add
-                min_node.prev.connectNext(min_node.next);
-            }
 		}
 		heapSize -= 1;
 		numTrees += min_node.rank - 1;
