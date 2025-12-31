@@ -312,6 +312,8 @@ public class Heap
         this.numTrees = 0;
         this.linksCnt = 0;
         this.cutCnt = 0;
+		this.totalHeapifyCosts = 0;
+		this.numMarkedNodes = 0;
     }
 
     /**

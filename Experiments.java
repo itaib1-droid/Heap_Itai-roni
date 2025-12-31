@@ -1,3 +1,6 @@
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -37,15 +40,15 @@ public class Experiments {
         System.out.println("EXPERIMENT 1: Insert Random + Delete Min");
         System.out.println("========================================\n");
         
+        // Generate random permutation once
+        int[] perm = generateRandomPermutation(N);
+        
         for (int heapType = 0; heapType < NUM_HEAP_TYPES; heapType++) {
-            boolean lazyMelds = (heapType != BINOMIAL_HEAP);
+            boolean lazyMelds = (heapType == LAZY_BINOMIAL_HEAP || heapType == FIBONACCI_HEAP);
             boolean lazyDecreaseKeys = (heapType == FIBONACCI_HEAP || heapType == BINOMIAL_WITH_CUTOFFS);
             
             Heap heap = new Heap(lazyMelds, lazyDecreaseKeys);
             Heap.HeapNode[] pointers = new Heap.HeapNode[N + 1];
-            
-            // Generate random permutation
-            int[] perm = generateRandomPermutation(N);
             
             long startTime = System.currentTimeMillis();
             
@@ -82,16 +85,16 @@ public class Experiments {
         System.out.println("EXPERIMENT 2: Insert + Delete Min + Delete Max");
         System.out.println("========================================\n");
         
+        // Generate random permutation once
+        int[] perm = generateRandomPermutation(N);
+        
         for (int heapType = 0; heapType < NUM_HEAP_TYPES; heapType++) {
-            boolean lazyMelds = (heapType != BINOMIAL_HEAP);
+            boolean lazyMelds = (heapType == LAZY_BINOMIAL_HEAP || heapType == FIBONACCI_HEAP);
             boolean lazyDecreaseKeys = (heapType == FIBONACCI_HEAP || heapType == BINOMIAL_WITH_CUTOFFS);
             
             Heap heap = new Heap(lazyMelds, lazyDecreaseKeys);
             Heap.HeapNode[] pointers = new Heap.HeapNode[N + 1];
             boolean[] deleted = new boolean[N + 1];
-            
-            // Generate random permutation
-            int[] perm = generateRandomPermutation(N);
             
             long startTime = System.currentTimeMillis();
             
@@ -104,9 +107,8 @@ public class Experiments {
             
             // Delete minimum
             heap.deleteMin();
-            deleted[perm[0]] = true; // Note: first item in perm might not be min, need to track properly
+            deleted[1] = true; // 1 is always the minimum in range [1, N]
             
-            // Actually, let's find and delete the max items
             // Delete max (highest key) until 46 items remain
             int itemsToDelete = N - 1 - 46; // N-1 after deleting min, then delete until 46 remain
             
@@ -144,16 +146,16 @@ public class Experiments {
         
         int numDecreases = (int) Math.ceil(N * 0.1);
         
+        // Generate random permutation once
+        int[] perm = generateRandomPermutation(N);
+        
         for (int heapType = 0; heapType < NUM_HEAP_TYPES; heapType++) {
-            boolean lazyMelds = (heapType != BINOMIAL_HEAP);
+            boolean lazyMelds = (heapType == LAZY_BINOMIAL_HEAP || heapType == FIBONACCI_HEAP);
             boolean lazyDecreaseKeys = (heapType == FIBONACCI_HEAP || heapType == BINOMIAL_WITH_CUTOFFS);
             
             Heap heap = new Heap(lazyMelds, lazyDecreaseKeys);
             Heap.HeapNode[] pointers = new Heap.HeapNode[N + 1];
             boolean[] deleted = new boolean[N + 1];
-            
-            // Generate random permutation
-            int[] perm = generateRandomPermutation(N);
             
             long startTime = System.currentTimeMillis();
             
@@ -165,9 +167,8 @@ public class Experiments {
             }
             
             // Delete minimum
-            int minKey = findMin(perm, deleted);
             heap.deleteMin();
-            deleted[minKey] = true;
+            deleted[1] = true; // 1 is always the minimum
             
             // Decrease key of ceil(n*0.1) largest items to 0
             int decreasedCount = 0;
@@ -201,19 +202,15 @@ public class Experiments {
      * Generate a random permutation of numbers 1 to n
      */
     static int[] generateRandomPermutation(int n) {
+        List<Integer> list = new ArrayList<>();
+        for (int i = 1; i <= n; i++) {
+            list.add(i);
+        }
+        Collections.shuffle(list);
         int[] perm = new int[n];
         for (int i = 0; i < n; i++) {
-            perm[i] = i + 1;
+            perm[i] = list.get(i);
         }
-        
-        Random rand = new Random();
-        for (int i = n - 1; i > 0; i--) {
-            int j = rand.nextInt(i + 1);
-            int temp = perm[i];
-            perm[i] = perm[j];
-            perm[j] = temp;
-        }
-        
         return perm;
     }
     
@@ -221,9 +218,9 @@ public class Experiments {
      * Find the minimum key in the remaining items
      */
     static int findMin(int[] perm, boolean[] deleted) {
-        for (int key : perm) {
-            if (!deleted[key]) {
-                return key;
+        for (int i = 1; i < deleted.length; i++) {
+            if (!deleted[i]) {
+                return i;
             }
         }
         return -1;
