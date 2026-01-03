@@ -150,6 +150,9 @@ public class Heap
 		node.mark = false;	
 	}
 
+	/**
+	 * conect the heaps together without consolidating
+	 */
     public void lazyMeld(Heap heap2)
     {
         // the other heap is empty so no changes required
@@ -185,6 +188,9 @@ public class Heap
 		}
     }
 
+	/**
+	 * conect the heaps together by consolidating
+	 */
     public void notLazyMeld(Heap heap2)
     {
         this.consolidate();
@@ -338,12 +344,10 @@ public class Heap
 	}
 
 
-
-
-
     /* ###############################################################################
     //                               main methods
     ############################################################################### */
+
     /**
      *
      * Constructor to initialize an empty heap.
@@ -506,7 +510,6 @@ public class Heap
 		deleteMin();
 	}
 
-
     /**
      * 
      * Meld the heap with heap2
@@ -522,7 +525,6 @@ public class Heap
         return;
 	}
     
-    
     /**
      * 
      * Return the number of elements in the heap
@@ -532,7 +534,6 @@ public class Heap
     {
         return heapSize;
     }
-
 
     /**
      * 
@@ -544,7 +545,6 @@ public class Heap
         return numTrees;
     }
     
-    
     /**
      * 
      * Return the number of marked nodes in the heap.
@@ -554,7 +554,6 @@ public class Heap
     {
         return numMarkedNodes;
     }
-    
     
     /**
      * 
@@ -566,7 +565,6 @@ public class Heap
         return linksCnt;
     }
     
-    
     /**
      * 
      * Return the total number of cuts.
@@ -577,7 +575,6 @@ public class Heap
         return cutCnt;
     }
     
-
     /**
      * 
      * Return the total heapify costs.
@@ -618,7 +615,6 @@ public class Heap
 			this.rank = 0;
 			this.mark = false;
 		}
-
 
     /**
      * inserts self to be before node by adjusting
